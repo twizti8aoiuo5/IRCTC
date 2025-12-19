@@ -1,18 +1,21 @@
-# Use the LinuxServer.io Firefox image which provides a web-based GUI
-FROM ghcr.io/linuxserver/firefox:latest
+FROM python:3.9-slim
 
-# Render uses port 10000 by default for external traffic
-# We map the internal KasmVNC port (3000) to Render's required port
+# Install only the necessary Chromium packages
+RUN apt-get update && apt-get install -y \
+    chromium \
+    chromium-driver \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy and install requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir flask selenium
+
+COPY . .
+
+# Set Render port
 ENV PORT=10000
 EXPOSE 10000
 
-# Set the timezone to Singapore as requested
-ENV TZ=Asia/Singapore
-
-# PUID and PGID 1000 are standard for non-root users in these containers
-ENV PUID=1000
-ENV PGID=1000
-
-# Configure the internal service to run on Render's expected port
-# This ensures the web interface is what you see when you visit the URL
-ENV CUSTOM_PORT=10000
+CMD ["python", "app.py"]
