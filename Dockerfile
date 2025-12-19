@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-# Install only the necessary Chromium packages
+# Install minimal Chromium and Driver
 RUN apt-get update && apt-get install -y \
     chromium \
     chromium-driver \
@@ -8,13 +8,13 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy and install requirements
+# Copy files and install Python libraries
 COPY requirements.txt .
 RUN pip install --no-cache-dir flask selenium
 
 COPY . .
 
-# Set Render port
+# Set Render standard port
 ENV PORT=10000
 EXPOSE 10000
 
