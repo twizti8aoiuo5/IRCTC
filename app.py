@@ -7,33 +7,37 @@ import os
 app = Flask(__name__)
 
 @app.route('/')
-def open_irctc():
-    # Setup Chrome options for a server environment
+def check_irctc():
     chrome_options = Options()
-    chrome_options.add_argument("--headless")
+    
+    # Critical flags to save RAM
+    chrome_options.add_argument("--headless=new") # New headless mode is more efficient
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu") # Saves memory on servers without GPUs
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--blink-settings=imagesEnabled=false") # Don't load images
+    chrome_options.add_argument("--memory-pressure-off") 
     
-    # Adding a realistic User-Agent to avoid immediate bot detection
+    # Use a real user agent to appear less like a bot
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36")
 
-    # In the Docker container, chromium-driver is located at /usr/bin/chromedriver
     service = Service(executable_path="/usr/bin/chromedriver")
-    
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver = None
     
     try:
-        # Attempt to open IRCTC
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.set_page_load_timeout(30) # Prevent hanging
+        
         driver.get("https://www.irctc.co.in/nget/train-search")
-        page_title = driver.title
-        driver.quit()
-        return f"Status: Success! Page Title: {page_title}"
+        title = driver.title
+        return f"<h1>Success!</h1><p>Accessed: {title}</p>"
     except Exception as e:
+        return f"<h1>Failed</h1><p>Error: {str(e)}</p>"
+    finally:
         if driver:
             driver.quit()
-        return f"Status: Failed. Error: {str(e)}"
 
 if __name__ == "__main__":
-    # Render provides a PORT environment variable
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
